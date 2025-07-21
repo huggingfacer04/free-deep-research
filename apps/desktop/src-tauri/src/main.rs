@@ -311,6 +311,29 @@ async fn main() {
             knowledge_graph::get_node_neighbors,
             knowledge_graph::get_knowledge_insights,
 
+            // Phase 5.1: Computer Vision commands
+            computer_vision::process_image,
+            computer_vision::get_job_status,
+            computer_vision::get_user_vision_history,
+            computer_vision::get_vision_cost_stats,
+            computer_vision::convert_image_to_base64,
+            computer_vision::validate_image,
+            computer_vision::get_supported_processing_types,
+            computer_vision::get_available_vision_providers,
+
+            // Phase 5.1: Image Classification commands
+            image_classification::create_image_classification_model,
+            image_classification::start_image_classification_training,
+            image_classification::get_image_classification_job,
+            image_classification::get_image_classification_model,
+            image_classification::list_user_image_classification_models,
+            image_classification::deploy_image_classification_model,
+            image_classification::classify_image,
+            image_classification::get_image_classification_statistics,
+            image_classification::create_default_cnn_architecture,
+            image_classification::create_default_training_config,
+            image_classification::create_default_deployment_config,
+
             // Health check
             health_check,
 

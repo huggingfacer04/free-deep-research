@@ -24,6 +24,10 @@ pub mod ml_commands;
 pub mod mobile_commands;
 pub mod advanced_analytics;
 
+// Phase 5.1: Computer Vision Commands
+pub mod computer_vision;
+pub mod image_classification;
+
 pub use api_management::*;
 pub use research::*;
 pub use config::*;
@@ -45,3 +49,7 @@ pub use knowledge_graph::*;
 pub use ml_commands::*;
 pub use mobile_commands::*;
 pub use advanced_analytics::*;
+
+// Phase 5.1: Computer Vision exports
+pub use computer_vision::*;
+pub use image_classification::*;

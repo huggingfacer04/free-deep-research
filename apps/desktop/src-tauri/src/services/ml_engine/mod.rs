@@ -17,6 +17,8 @@ pub mod predictive_caching;
 pub mod recommendation_system;
 pub mod model_versioning;
 pub mod ab_testing;
+// Phase 5.1: Image Classification
+pub mod image_classification;
 
 use model_training::{ModelTrainer, TrainingConfig, TrainingJob, ModelMetrics};
 use inference_engine::{InferenceEngine, InferenceRequest, InferenceResult, ModelType};
@@ -26,6 +28,8 @@ use predictive_caching::{PredictiveCacheManager, CacheStrategy, CachePrediction}
 use recommendation_system::{RecommendationEngine, RecommendationType, Recommendation};
 use model_versioning::{ModelVersionManager, ModelVersion, VersioningStrategy};
 use ab_testing::{ABTestManager, ABTest, TestResult, TestConfig};
+// Phase 5.1: Image Classification
+use image_classification::{ImageClassificationService, ImageClassificationConfig};
 
 /// Machine Learning engine service for predictive analytics and optimization (V1.2.0)
 pub struct MLEngineService {
@@ -37,6 +41,8 @@ pub struct MLEngineService {
     recommendation_engine: Arc<RwLock<RecommendationEngine>>,
     model_version_manager: Arc<RwLock<ModelVersionManager>>,
     ab_test_manager: Arc<RwLock<ABTestManager>>,
+    // Phase 5.1: Image Classification
+    image_classification: Arc<RwLock<ImageClassificationService>>,
     active_models: Arc<RwLock<HashMap<String, MLModel>>>,
     training_jobs: Arc<RwLock<HashMap<Uuid, TrainingJob>>>,
     ml_config: MLEngineConfig,
@@ -238,6 +244,20 @@ impl MLEngineService {
         let recommendation_engine = Arc::new(RwLock::new(RecommendationEngine::new().await?));
         let model_version_manager = Arc::new(RwLock::new(ModelVersionManager::new(VersioningStrategy::default()).await?));
         let ab_test_manager = Arc::new(RwLock::new(ABTestManager::new().await?));
+
+        // Phase 5.1: Initialize Image Classification Service
+        let image_classification_config = ImageClassificationConfig {
+            max_concurrent_training_jobs: 3,
+            default_training_timeout_hours: 24,
+            model_storage_path: "/models/image_classification".to_string(),
+            dataset_storage_path: "/datasets/images".to_string(),
+            inference_cache_ttl_seconds: 3600,
+            gpu_memory_limit_gb: 8.0,
+            enable_model_versioning: true,
+            enable_a_b_testing: true,
+        };
+        let image_classification = Arc::new(RwLock::new(ImageClassificationService::new(image_classification_config).await?));
+
         let active_models = Arc::new(RwLock::new(HashMap::new()));
         let training_jobs = Arc::new(RwLock::new(HashMap::new()));
 
@@ -250,6 +270,7 @@ impl MLEngineService {
             recommendation_engine,
             model_version_manager,
             ab_test_manager,
+            image_classification,
             active_models,
             training_jobs,
             ml_config,
@@ -507,6 +528,86 @@ impl MLEngineService {
             counterfactual_examples: Vec::new(),
             confidence_intervals: None,
         })
+    }
+
+    // Phase 5.1: Image Classification Methods
+
+    /// Create a new image classification model
+    pub async fn create_image_classification_model(
+        &self,
+        name: String,
+        model_type: crate::models::image_classification::ImageModelType,
+        framework: crate::models::image_classification::MLFramework,
+        architecture: crate::models::image_classification::ModelArchitecture,
+        created_by: Uuid,
+    ) -> AppResult<Uuid> {
+        let image_classification = self.image_classification.read().await;
+        image_classification.create_model(name, model_type, framework, architecture, created_by).await
+    }
+
+    /// Start training an image classification model
+    pub async fn start_image_classification_training(
+        &self,
+        model_id: Uuid,
+        training_config: crate::models::image_classification::TrainingConfiguration,
+        user_id: Uuid,
+    ) -> AppResult<Uuid> {
+        let image_classification = self.image_classification.read().await;
+        image_classification.start_training(model_id, training_config, user_id).await
+    }
+
+    /// Get image classification training job status
+    pub async fn get_image_classification_job(
+        &self,
+        job_id: Uuid,
+    ) -> AppResult<Option<crate::models::image_classification::ImageClassificationJob>> {
+        let image_classification = self.image_classification.read().await;
+        image_classification.get_training_job(job_id).await
+    }
+
+    /// Get image classification model
+    pub async fn get_image_classification_model(
+        &self,
+        model_id: Uuid,
+    ) -> AppResult<Option<crate::models::image_classification::ImageClassificationModel>> {
+        let image_classification = self.image_classification.read().await;
+        image_classification.get_model(model_id).await
+    }
+
+    /// List user's image classification models
+    pub async fn list_user_image_classification_models(
+        &self,
+        user_id: Uuid,
+    ) -> AppResult<Vec<crate::models::image_classification::ImageClassificationModel>> {
+        let image_classification = self.image_classification.read().await;
+        image_classification.list_user_models(user_id).await
+    }
+
+    /// Deploy an image classification model
+    pub async fn deploy_image_classification_model(
+        &self,
+        model_id: Uuid,
+        deployment_config: crate::models::image_classification::DeploymentConfiguration,
+    ) -> AppResult<String> {
+        let image_classification = self.image_classification.read().await;
+        image_classification.deploy_model(model_id, deployment_config).await
+    }
+
+    /// Classify an image using a deployed model
+    pub async fn classify_image(
+        &self,
+        request: crate::models::image_classification::ImageClassificationRequest,
+    ) -> AppResult<crate::models::image_classification::ImageClassificationResponse> {
+        let image_classification = self.image_classification.read().await;
+        image_classification.classify_image(request).await
+    }
+
+    /// Get image classification training statistics
+    pub async fn get_image_classification_statistics(
+        &self,
+    ) -> AppResult<crate::services::ml_engine::image_classification::TrainingStatistics> {
+        let image_classification = self.image_classification.read().await;
+        image_classification.get_training_statistics().await
     }
 }
 

@@ -13,6 +13,8 @@ pub mod analytics;
 pub mod collaboration;
 pub mod mobile_api;
 pub mod performance;
+// Phase 5.1: Computer Vision
+pub mod computer_vision;
 
 // V1.2.0 Services
 pub mod plugin_system;
@@ -47,6 +49,8 @@ use analytics::AnalyticsService;
 use collaboration::CollaborationService;
 use mobile_api::MobileApiService;
 use performance::PerformanceService;
+// Phase 5.1: Computer Vision
+use computer_vision::ComputerVisionService;
 
 // V1.2.0 Services
 use plugin_system::PluginSystemService;
@@ -104,6 +108,9 @@ pub struct ServiceManager {
     pub nlp_engine_service: Arc<RwLock<NLPEngineService>>,
     pub blockchain_service: Arc<RwLock<BlockchainService>>,
     pub knowledge_graph_service: Arc<RwLock<KnowledgeGraphService>>,
+
+    // Phase 5.1: Computer Vision Service
+    pub computer_vision: Arc<RwLock<ComputerVisionService>>,
 }
 
 impl ServiceManager {
@@ -204,6 +211,14 @@ impl ServiceManager {
         ).await?;
         let bmad_integration = Arc::new(RwLock::new(bmad_integration));
 
+        // Phase 5.1: Initialize Computer Vision service
+        let computer_vision = ComputerVisionService::new(
+            api_manager.clone(),
+            data_persistence.clone(),
+            monitoring.clone(),
+        ).await?;
+        let computer_vision = Arc::new(RwLock::new(computer_vision));
+
         let service_manager = Self {
             api_manager,
             research_engine,
@@ -233,6 +248,8 @@ impl ServiceManager {
             nlp_engine_service,
             blockchain_service,
             knowledge_graph_service,
+            // Phase 5.1: Computer Vision
+            computer_vision,
         };
         
         // Start background services
