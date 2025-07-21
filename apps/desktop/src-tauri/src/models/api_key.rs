@@ -12,6 +12,10 @@ pub enum ServiceProvider {
     Firecrawl,
     Tavily,
     Exa,
+    // Phase 5.1: Computer Vision APIs
+    GoogleVision,
+    AWSRekognition,
+    AzureComputerVision,
 }
 
 impl ServiceProvider {
@@ -24,6 +28,9 @@ impl ServiceProvider {
             ServiceProvider::Firecrawl => "Firecrawl",
             ServiceProvider::Tavily => "Tavily",
             ServiceProvider::Exa => "Exa AI",
+            ServiceProvider::GoogleVision => "Google Vision API",
+            ServiceProvider::AWSRekognition => "AWS Rekognition",
+            ServiceProvider::AzureComputerVision => "Azure Computer Vision",
         }
     }
 
@@ -36,6 +43,9 @@ impl ServiceProvider {
             ServiceProvider::Firecrawl => 500,  // 500 requests/month
             ServiceProvider::Tavily => 1000,    // 1000 searches/month
             ServiceProvider::Exa => 1000,       // 1000 searches/month
+            ServiceProvider::GoogleVision => 1000,  // 1000 requests/month
+            ServiceProvider::AWSRekognition => 5000, // 5000 requests/month (free tier)
+            ServiceProvider::AzureComputerVision => 5000, // 5000 requests/month (free tier)
         }
     }
 
@@ -48,6 +58,9 @@ impl ServiceProvider {
             ServiceProvider::Firecrawl => ResetPeriod::Monthly,
             ServiceProvider::Tavily => ResetPeriod::Monthly,
             ServiceProvider::Exa => ResetPeriod::Monthly,
+            ServiceProvider::GoogleVision => ResetPeriod::Monthly,
+            ServiceProvider::AWSRekognition => ResetPeriod::Monthly,
+            ServiceProvider::AzureComputerVision => ResetPeriod::Monthly,
         }
     }
 

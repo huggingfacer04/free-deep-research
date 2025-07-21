@@ -5,6 +5,9 @@ pub mod research_template;
 pub mod configuration;
 pub mod metrics;
 pub mod security;
+// Phase 5.1: Computer Vision
+pub mod computer_vision;
+pub mod image_classification;
 
 // V3.0.0 Models - Global Intelligence Network
 pub mod federated_research;
@@ -20,6 +23,8 @@ pub use research_template::*;
 pub use configuration::*;
 pub use metrics::*;
 pub use security::*;
+pub use computer_vision::*;
+pub use image_classification::*;
 
 // V3.0.0 Model exports
 pub use federated_research::*;

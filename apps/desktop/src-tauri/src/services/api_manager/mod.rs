@@ -271,6 +271,15 @@ impl ApiManagerService {
             crate::models::api_key::ServiceProvider::Exa => {
                 self.test_exa_key(&decrypted_key).await
             }
+            crate::models::api_key::ServiceProvider::GoogleVision => {
+                self.test_google_vision_key(&decrypted_key).await
+            }
+            crate::models::api_key::ServiceProvider::AWSRekognition => {
+                self.test_aws_rekognition_key(&decrypted_key).await
+            }
+            crate::models::api_key::ServiceProvider::AzureComputerVision => {
+                self.test_azure_computer_vision_key(&decrypted_key).await
+            }
         };
 
         let response_time = start_time.elapsed().as_millis() as u32;
@@ -427,6 +436,64 @@ impl ApiManagerService {
 
         tokio::time::sleep(tokio::time::Duration::from_millis(350)).await;
         Ok("Exa API key is valid and working (mock validation)".to_string())
+    }
+
+    /// Test Google Vision API key
+    async fn test_google_vision_key(&self, api_key: &str) -> AppResult<String> {
+        // Mock implementation for development/testing
+        debug!("Testing Google Vision API key (mock implementation)");
+
+        if api_key.is_empty() {
+            return Err(ApiError::authentication_failed("google_vision".to_string(),
+                "API key cannot be empty".to_string()).into());
+        }
+
+        if api_key.len() < 32 {
+            return Err(ApiError::authentication_failed("google_vision".to_string(),
+                "Google Vision API key appears to be invalid (too short)".to_string()).into());
+        }
+
+        tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+        Ok("Google Vision API key is valid and working (mock validation)".to_string())
+    }
+
+    /// Test AWS Rekognition API key
+    async fn test_aws_rekognition_key(&self, api_key: &str) -> AppResult<String> {
+        // Mock implementation for development/testing
+        debug!("Testing AWS Rekognition API key (mock implementation)");
+
+        if api_key.is_empty() {
+            return Err(ApiError::authentication_failed("aws_rekognition".to_string(),
+                "API key cannot be empty".to_string()).into());
+        }
+
+        // AWS access keys typically start with AKIA
+        if !api_key.starts_with("AKIA") && api_key.len() < 20 {
+            return Err(ApiError::authentication_failed("aws_rekognition".to_string(),
+                "AWS access key appears to be invalid".to_string()).into());
+        }
+
+        tokio::time::sleep(tokio::time::Duration::from_millis(600)).await;
+        Ok("AWS Rekognition API key is valid and working (mock validation)".to_string())
+    }
+
+    /// Test Azure Computer Vision API key
+    async fn test_azure_computer_vision_key(&self, api_key: &str) -> AppResult<String> {
+        // Mock implementation for development/testing
+        debug!("Testing Azure Computer Vision API key (mock implementation)");
+
+        if api_key.is_empty() {
+            return Err(ApiError::authentication_failed("azure_computer_vision".to_string(),
+                "API key cannot be empty".to_string()).into());
+        }
+
+        if api_key.len() != 32 {
+            return Err(ApiError::authentication_failed("azure_computer_vision".to_string(),
+                "Azure Computer Vision API key should be 32 characters long".to_string()).into());
+        }
+
+        tokio::time::sleep(tokio::time::Duration::from_millis(550)).await;
+        Ok("Azure Computer Vision API key is valid and working (mock validation)".to_string())
     }
 
     /// Import API keys from CSV content

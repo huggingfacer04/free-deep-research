@@ -49,6 +49,19 @@ type Query {
   # Real-time Data
   liveMetrics: LiveMetrics!
   activeConnections: [Connection!]!
+
+  # Phase 5.1: Computer Vision
+  visionProcessingJob(jobId: UUID!): VisionProcessingJob
+  userVisionHistory(userId: UUID!, limit: Int): [VisionProcessingJob!]!
+  visionCostStats: VisionCostTracker!
+  availableVisionProviders: [ProviderInfo!]!
+  supportedProcessingTypes(provider: VisionProvider!): [VisionProcessingType!]!
+
+  # Phase 5.1: Image Classification
+  imageClassificationModel(modelId: UUID!): ImageClassificationModel
+  userImageClassificationModels(userId: UUID!): [ImageClassificationModel!]!
+  imageClassificationJob(jobId: UUID!): ImageClassificationJob
+  imageClassificationStatistics: TrainingStatistics!
 }
 
 # Root Mutation type
@@ -100,6 +113,16 @@ type Mutation {
   # BMAD Integration
   executeBmadWorkflow(agentId: String!, input: BMadExecutionInput!): BMadExecution!
   updateBmadAgent(agentId: String!, input: BMadAgentInput!): BMadAgent!
+
+  # Phase 5.1: Computer Vision
+  processImage(userId: UUID!, input: VisionProcessingRequest!): VisionProcessingResponse!
+  cancelVisionProcessing(jobId: UUID!): Boolean!
+
+  # Phase 5.1: Image Classification
+  createImageClassificationModel(userId: UUID!, input: ImageClassificationModelInput!): ImageClassificationModel!
+  startImageClassificationTraining(modelId: UUID!, userId: UUID!, config: TrainingConfigurationInput!): ImageClassificationJob!
+  deployImageClassificationModel(modelId: UUID!, config: DeploymentConfigurationInput!): String!
+  classifyImage(input: ImageClassificationRequestInput!): ImageClassificationResponse!
 }
 
 # Root Subscription type
@@ -125,6 +148,14 @@ type Subscription {
   
   # BMAD real-time updates
   bmadExecutionUpdates(executionId: UUID!): BMadExecutionUpdate!
+
+  # Phase 5.1: Computer Vision real-time updates
+  visionProcessingUpdates(jobId: UUID!): VisionProcessingJob!
+  visionCostUpdates(userId: UUID!): VisionCostTracker!
+
+  # Phase 5.1: Image Classification real-time updates
+  imageClassificationTrainingUpdates(jobId: UUID!): ImageClassificationJob!
+  imageClassificationModelUpdates(modelId: UUID!): ImageClassificationModel!
 }
 
 # User types
@@ -187,7 +218,528 @@ enum ServiceProvider {
   FIRECRAWL
   TAVILY
   EXA
+  # Phase 5.1: Computer Vision APIs
+  GOOGLE_VISION
+  AWS_REKOGNITION
+  AZURE_COMPUTER_VISION
   CUSTOM
+}
+
+# Phase 5.1: Computer Vision Types
+enum VisionProvider {
+  GOOGLE_VISION
+  AWS_REKOGNITION
+  AZURE_COMPUTER_VISION
+}
+
+enum VisionProcessingType {
+  LABEL_DETECTION
+  TEXT_DETECTION
+  FACE_DETECTION
+  OBJECT_DETECTION
+  SAFE_SEARCH_DETECTION
+  IMAGE_PROPERTIES
+  CROP_HINTS
+  WEB_DETECTION
+  DOCUMENT_TEXT_DETECTION
+  LANDMARK_DETECTION
+  LOGO_DETECTION
+  CELEBRITY_RECOGNITION
+  MODERATION_LABELS
+  IMAGE_ANALYSIS
+}
+
+enum ProcessingStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum VisionLikelihood {
+  UNKNOWN
+  VERY_UNLIKELY
+  UNLIKELY
+  POSSIBLE
+  LIKELY
+  VERY_LIKELY
+}
+
+type VisionProcessingJob {
+  id: ID!
+  userId: ID!
+  imageUrl: String
+  imageData: String
+  processingType: VisionProcessingType!
+  provider: VisionProvider!
+  status: ProcessingStatus!
+  results: VisionResults
+  errorMessage: String
+  processingTimeMs: Int
+  costCents: Int
+  createdAt: String!
+  completedAt: String
+  metadata: JSON
+}
+
+type VisionResults {
+  labels: [VisionLabel!]
+  textDetections: [VisionTextDetection!]
+  faces: [VisionFace!]
+  objects: [VisionObject!]
+  safeSearch: VisionSafeSearch
+  imageProperties: VisionImageProperties
+  cropHints: [VisionCropHint!]
+  webDetection: VisionWebDetection
+  landmarks: [VisionLandmark!]
+  logos: [VisionLogo!]
+  celebrities: [VisionCelebrity!]
+  moderationLabels: [VisionModerationLabel!]
+  rawResponse: JSON
+}
+
+type VisionLabel {
+  name: String!
+  confidence: Float!
+  description: String
+  category: String
+  boundingBox: VisionBoundingBox
+}
+
+type VisionTextDetection {
+  text: String!
+  confidence: Float!
+  language: String
+  boundingBox: VisionBoundingBox
+  textType: String
+}
+
+type VisionFace {
+  boundingBox: VisionBoundingBox!
+  confidence: Float!
+  ageRange: VisionAgeRange
+  gender: String
+  emotions: [VisionEmotion!]
+  landmarks: [VisionFaceLandmark!]
+  attributes: VisionFaceAttributes
+}
+
+type VisionObject {
+  name: String!
+  confidence: Float!
+  boundingBox: VisionBoundingBox!
+  category: String
+}
+
+type VisionSafeSearch {
+  adult: VisionLikelihood!
+  spoof: VisionLikelihood!
+  medical: VisionLikelihood!
+  violence: VisionLikelihood!
+  racy: VisionLikelihood!
+}
+
+type VisionImageProperties {
+  dominantColors: [VisionColor!]!
+  accentColor: String
+  isBlackAndWhite: Boolean
+  brightness: Float
+  contrast: Float
+  sharpness: Float
+}
+
+type VisionCropHint {
+  boundingBox: VisionBoundingBox!
+  confidence: Float!
+  importanceFraction: Float
+}
+
+type VisionWebDetection {
+  webEntities: [VisionWebEntity!]!
+  fullMatchingImages: [VisionWebImage!]!
+  partialMatchingImages: [VisionWebImage!]!
+  pagesWithMatchingImages: [VisionWebPage!]!
+  visuallySimilarImages: [VisionWebImage!]!
+  bestGuessLabels: [String!]!
+}
+
+type VisionLandmark {
+  name: String!
+  confidence: Float!
+  boundingBox: VisionBoundingBox
+  location: VisionLocation
+}
+
+type VisionLogo {
+  name: String!
+  confidence: Float!
+  boundingBox: VisionBoundingBox!
+}
+
+type VisionCelebrity {
+  name: String!
+  confidence: Float!
+  boundingBox: VisionBoundingBox!
+  urls: [String!]
+  knownGender: String
+}
+
+type VisionModerationLabel {
+  name: String!
+  confidence: Float!
+  parentName: String
+}
+
+type VisionBoundingBox {
+  left: Float!
+  top: Float!
+  width: Float!
+  height: Float!
+}
+
+type VisionAgeRange {
+  low: Int!
+  high: Int!
+}
+
+type VisionEmotion {
+  emotionType: String!
+  confidence: Float!
+}
+
+type VisionFaceLandmark {
+  landmarkType: String!
+  x: Float!
+  y: Float!
+}
+
+type VisionFaceAttributes {
+  smile: Boolean
+  eyeglasses: Boolean
+  sunglasses: Boolean
+  beard: Boolean
+  mustache: Boolean
+  eyesOpen: Boolean
+  mouthOpen: Boolean
+}
+
+type VisionColor {
+  red: Int!
+  green: Int!
+  blue: Int!
+  hexCode: String!
+  pixelFraction: Float!
+  score: Float!
+}
+
+type VisionWebEntity {
+  entityId: String
+  description: String!
+  score: Float!
+}
+
+type VisionWebImage {
+  url: String!
+  score: Float!
+}
+
+type VisionWebPage {
+  url: String!
+  title: String
+  score: Float!
+}
+
+type VisionLocation {
+  latitude: Float!
+  longitude: Float!
+}
+
+type VisionCostTracker {
+  dailyCostCents: Int!
+  monthlyCostCents: Int!
+  dailyLimitCents: Int!
+  monthlyLimitCents: Int!
+  costPerRequest: JSON!
+}
+
+type ProviderInfo {
+  provider: VisionProvider!
+  displayName: String!
+  isAvailable: Boolean!
+  supportedTypes: [VisionProcessingType!]!
+}
+
+input VisionProcessingRequest {
+  imageUrl: String
+  imageData: String
+  processingTypes: [VisionProcessingType!]!
+  provider: VisionProvider
+  options: VisionProcessingOptions
+}
+
+input VisionProcessingOptions {
+  maxResults: Int
+  minConfidence: Float
+  language: String
+  includeGeoResults: Boolean
+  cropHintsAspectRatios: [Float!]
+  faceAttributes: [String!]
+}
+
+type VisionProcessingResponse {
+  jobId: ID!
+  status: ProcessingStatus!
+  results: VisionResults
+  processingTimeMs: Int
+  costCents: Int
+  providerUsed: VisionProvider!
+  errorMessage: String
+}
+
+# Phase 5.1: Image Classification Types
+enum ImageModelType {
+  GENERAL_CLASSIFICATION
+  DOCUMENT_CLASSIFICATION
+  MEDICAL_IMAGE_CLASSIFICATION
+  SCIENTIFIC_DIAGRAM_CLASSIFICATION
+  IMAGE_QUALITY_ASSESSMENT
+  CONTENT_MODERATION_CLASSIFICATION
+  CUSTOM_DOMAIN_CLASSIFICATION
+}
+
+enum MLFramework {
+  TENSORFLOW
+  PYTORCH
+  KERAS
+  SCIKIT_LEARN
+  HUGGINGFACE
+}
+
+enum ModelStatus {
+  DRAFT
+  TRAINING
+  TRAINED
+  VALIDATING
+  DEPLOYED
+  DEPRECATED
+  FAILED
+}
+
+enum TrainingJobStatus {
+  QUEUED
+  INITIALIZING
+  DATA_LOADING
+  TRAINING
+  VALIDATING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum OptimizerType {
+  ADAM
+  SGD
+  RMSPROP
+  ADAMW
+  ADAGRAD
+}
+
+enum ServingPlatform {
+  TENSORFLOW_SERVING
+  TORCH_SERVE
+  ONNX
+  TRITON
+  CUSTOM
+}
+
+type ImageClassificationModel {
+  id: ID!
+  name: String!
+  modelType: ImageModelType!
+  version: String!
+  framework: MLFramework!
+  status: ModelStatus!
+  accuracyMetrics: AccuracyMetrics
+  createdAt: String!
+  updatedAt: String!
+  createdBy: ID!
+  metadata: JSON!
+}
+
+type AccuracyMetrics {
+  accuracy: Float!
+  precision: Float!
+  recall: Float!
+  f1Score: Float!
+  top5Accuracy: Float
+  validationLoss: Float!
+  trainingLoss: Float!
+  inferenceTimeMs: Float!
+  modelSizeMb: Float!
+}
+
+type ImageClassificationJob {
+  jobId: ID!
+  modelId: ID!
+  userId: ID!
+  jobName: String!
+  status: TrainingJobStatus!
+  progress: Float!
+  currentEpoch: Int!
+  totalEpochs: Int!
+  currentMetrics: TrainingMetrics
+  bestMetrics: TrainingMetrics
+  startedAt: String!
+  estimatedCompletion: String
+  completedAt: String
+  errorMessage: String
+}
+
+type TrainingMetrics {
+  epoch: Int!
+  trainingLoss: Float!
+  trainingAccuracy: Float!
+  validationLoss: Float!
+  validationAccuracy: Float!
+  learningRate: Float!
+  timestamp: String!
+}
+
+type ImageClassificationResponse {
+  requestId: ID!
+  modelId: ID!
+  predictions: [ClassificationPrediction!]!
+  inferenceTimeMs: Float!
+  modelVersion: String!
+  features: [Float!]
+  metadata: JSON!
+  timestamp: String!
+}
+
+type ClassificationPrediction {
+  className: String!
+  classId: Int!
+  confidence: Float!
+  probability: Float!
+}
+
+type TrainingStatistics {
+  totalJobs: Int!
+  completedJobs: Int!
+  failedJobs: Int!
+  activeJobs: Int!
+  totalModels: Int!
+  deployedModels: Int!
+}
+
+input ImageClassificationModelInput {
+  name: String!
+  modelType: ImageModelType!
+  framework: MLFramework!
+  architecture: JSON!
+}
+
+input TrainingConfigurationInput {
+  datasetConfig: DatasetConfigurationInput!
+  trainingParams: TrainingParametersInput!
+  augmentationConfig: DataAugmentationConfigInput
+  validationConfig: ValidationConfigurationInput!
+  earlyStoppingConfig: EarlyStoppingConfigInput
+}
+
+input DatasetConfigurationInput {
+  datasetName: String!
+  datasetPath: String!
+  numClasses: Int!
+  classNames: [String!]!
+  trainSplit: Float!
+  validationSplit: Float!
+  testSplit: Float!
+  imageSize: [Int!]!
+  batchSize: Int!
+  shuffle: Boolean!
+}
+
+input TrainingParametersInput {
+  epochs: Int!
+  learningRate: Float!
+  optimizer: OptimizerConfigInput!
+  lossFunction: String!
+  metrics: [String!]!
+}
+
+input OptimizerConfigInput {
+  optimizerType: OptimizerType!
+  parameters: JSON!
+}
+
+input DataAugmentationConfigInput {
+  rotationRange: Float
+  widthShiftRange: Float
+  heightShiftRange: Float
+  shearRange: Float
+  zoomRange: Float
+  horizontalFlip: Boolean!
+  verticalFlip: Boolean!
+  brightnessRange: [Float!]
+  contrastRange: [Float!]
+}
+
+input ValidationConfigurationInput {
+  validationFrequency: Int!
+  validationMetrics: [String!]!
+  saveBestModel: Boolean!
+  monitorMetric: String!
+}
+
+input EarlyStoppingConfigInput {
+  monitor: String!
+  patience: Int!
+  minDelta: Float!
+  restoreBestWeights: Boolean!
+}
+
+input DeploymentConfigurationInput {
+  servingConfig: ServingConfigurationInput!
+  scalingConfig: ScalingConfigurationInput!
+  monitoringConfig: MonitoringConfigurationInput!
+}
+
+input ServingConfigurationInput {
+  modelName: String!
+  modelVersion: String!
+  servingPlatform: ServingPlatform!
+}
+
+input ScalingConfigurationInput {
+  minReplicas: Int!
+  maxReplicas: Int!
+  targetCpuUtilization: Float!
+  targetMemoryUtilization: Float!
+}
+
+input MonitoringConfigurationInput {
+  enableMetrics: Boolean!
+  enableLogging: Boolean!
+  logLevel: String!
+  metricsPort: Int!
+  healthCheckPath: String!
+  prometheusMetrics: Boolean!
+}
+
+input ImageClassificationRequestInput {
+  modelId: ID!
+  imageData: JSON!
+  inferenceConfig: InferenceConfigInput!
+}
+
+input InferenceConfigInput {
+  topK: Int
+  confidenceThreshold: Float
+  returnProbabilities: Boolean!
+  returnFeatures: Boolean!
+  batchSize: Int
 }
 
 enum ApiKeyStatus {
